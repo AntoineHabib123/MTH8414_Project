@@ -1,0 +1,61 @@
+\documentclass{article}
+\usepackage{graphicx} % Required for inserting 
+\usepackage{amssymb}
+\usepackage[margin=1in]{geometry}
+
+
+\title{Projet, MTH8414}
+\author{Antoine Habib, Isaac Valin}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section*{Question 1 - using HiGHs}
+
+\subsection*{1.1}
+%Décrire les décisions 
+\begin{itemize}
+    \item variable de décision qui prend en compte deux décision à la fois:
+        \subitem Décider si bus $b$ recharge à la période $t$ 
+        \subitem Décider la puissance de recharge de bus $b$ à la période $t$
+\end{itemize}
+
+\subsection*{1.2}
+\paragraph{Esembles}
+\begin{itemize}
+    \item B - Nombre de bus dans le problème, $b = 1, \dots, B$
+    \item T - Nombre de périodes du problème, $t = 0,\dots 48$
+\end{itemize}
+
+\paragraph{Paramètres}
+\begin{itemize}
+    \item $a_{bt}$ - si bus b est en route pendant période $t$, $a_{bt}\in [0,1], \quad \forall b \in B, \quad \forall t \in T$
+    \item $e_{bt}$ - energie de bus $b$ à la fin de la période $t$, $e_{bt} \in \mathbb{R}$
+    \item $c_{bt}$ - consommation d'énergie de bus $b$ pendant la période $t$, $c_{bt}$ $\in \mathbb {R}, \quad \forall b \in B, \quad \forall t \in T$
+    \item $p_t$ -  prix d'énergie de recharge pendant periode $t$. 
+    
+\end{itemize}
+
+
+\paragraph{Variables}
+$x_{bt}$, la quantité d'énergie de recharge de bus $b$ à la période $t$, $\qquad x_{bt}\in [0,150]$
+
+\paragraph{Contraintes}
+\begin{itemize}
+    \item $x_{ij} \leq M(1-a_{bt})$, pour $M \geq 150 (kW), \quad \forall b \in B, \quad \forall t \in T$, , Si bus $b$ à période $t$ est sur la route, ne peut pas charger. Si le bus recharge, il ne peut pas être sur la route. 
+    \item $x_{bt} \leq 150, , \quad \forall b \in B, \quad \forall t \in T$. Contrainte de charge maximale
+    \item $ 90 \leq e_{bt} \leq 450, , \quad \forall b \in B, \quad \forall t \in T$. Contrainte de capcité de batterie et de reserve minimale. 
+    \item $e_{b0}=e_{b48}=450$, Contrainte de batterie pleine en début et fin de temps.
+    \item $e_{bt+1} = e_{bt} - c_{bt} + x_{bt}, , \quad \forall b \in B, \quad \forall t \in T$. Contrainte de consommation et de rechargement d'énergie. 
+    \item 
+\end{itemize}
+
+\paragraph{Fonction Objectif}
+minimiser les coûts de recharge pour tous les bus sur toutes les périodes : 
+$$\min \sum_{b} x_{bt}p_t$$
+
+
+
+
+\end{document}
