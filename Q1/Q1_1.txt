@@ -1,0 +1,88 @@
+\documentclass{article}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage[margin=1in]{geometry}
+
+
+\title{Projet, MTH8414}
+\author{Antoine Habib, Isaac Valin et Kinan Toutoungy}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section*{Question 1}
+
+\subsection*{1.1}
+% Décrire les décisions
+\begin{itemize}
+  \item Une seule famille de variables de décision, $p_{bt}$, prend en compte deux décisions à la fois :
+  \begin{itemize}
+    \item décider si le bus $b$ recharge pendant la période $t$ ($p_{bt} > 0$) ou non ($p_{bt} = 0$) ;
+    \item décider la puissance de recharge du bus $b$ pendant la période $t$.
+  \end{itemize}
+  \item Les niveaux de batterie $E_{bt}$ sont des variables auxiliaires : ils découlent des décisions de recharge et de l'horaire des bus.
+\end{itemize}
+
+\subsection*{1.2}
+\paragraph{Ensembles}
+\begin{itemize}
+  \item $B = \{1, \dots, n_B\}$ : ensemble des bus (\texttt{BUSES}), où $n_B$ = \texttt{nBuses}.
+  \item $\mathcal{T} = \{1, \dots, T\}$ : ensemble des périodes (\texttt{PERIODS}), où $T$ = \texttt{nPeriods}. Période 1: 4\,h à 4\,h\,30.
+  \item $\mathcal{T}_0 = \{0\} \cup \mathcal{T}$ : instants où l'on mesure le niveau des batteries ; l'indice 0 représente le début de la journée.
+\end{itemize}
+
+\paragraph{Paramètres}
+\begin{itemize}
+  \item $a_{bt} \in \{0,1\}$ (\texttt{away}) : vaut 1 si le bus $b$ est sur la route pendant la période $t$, $\forall b \in B,\ \forall t \in \mathcal{T}$.
+  \item $c_{bt} \geq 0$ (\texttt{cons}) : énergie consommée par le bus $b$ pendant la période $t$ (kWh), $\forall b \in B,\ \forall t \in \mathcal{T}$.
+  \item $\pi_t$ (\texttt{price}) : prix de l'énergie pendant la période $t$ (cents/kWh), $\forall t \in \mathcal{T}$.
+  \item $h$ (\texttt{periodsPerHour}) : nombre de périodes par heure ; un bus qui recharge à $p$~kW pendant une période reçoit $p/h$~kWh.
+  \item $C$ (\texttt{capacity}) : capacité d'une batterie (kWh).
+  \item $R$ (\texttt{reserve}) : niveau minimal d'une batterie en tout temps (kWh).
+  \item $P^{\max} = 150$~kW (\texttt{maxPower}) : puissance maximale d'un chargeur.
+  \item $G$ (\texttt{gridLimit}) : puissance totale maximale que le dépôt peut tirer du réseau (kW).
+  \item $D$ (\texttt{demandCharge}) : prime de puissance (cents par kW de la pointe de la journée) ; sert seulement au calcul de la facture après la résolution.
+\end{itemize}
+
+\paragraph{Variables}
+\begin{itemize}
+  \item $p_{bt} \in [0, P^{\max}]$ (\texttt{p[b,t]}) : puissance de recharge du bus $b$ pendant la période $t$ (kW), $\forall b \in B,\ \forall t \in \mathcal{T}$.
+  \item $E_{bt} \in [R, C]$ (\texttt{E[b,t]}) : énergie dans la batterie du bus $b$ à la fin de la période $t$ (kWh), $\forall b \in B,\ \forall t \in \mathcal{T}_0$~; $E_{b0}$ est le niveau au début de la journée.
+\end{itemize}
+Les bornes de ces domaines imposent directement la puissance maximale d'un chargeur ($p_{bt} \leq P^{\max}$) ainsi que la réserve minimale et la capacité des batteries ($R \leq E_{bt} \leq C$).
+
+\paragraph{Contraintes}
+\begin{enumerate}
+  \item Batteries pleines au début de la journée :
+  \[ E_{b0} = C \qquad \forall b \in B \]
+
+  \item Batteries pleines à la fin de la journée :
+  \[ E_{bT} = C \qquad \forall b \in B \]
+
+  \item Recharge interdite lorsque le bus est sur la route :
+  \[ p_{bt} \leq P^{\max}\,(1 - a_{bt}) \qquad \forall b \in B,\ \forall t \in \mathcal{T} \]
+  Si $a_{bt} = 1$, alors $p_{bt} = 0$ ; si $a_{bt} = 0$, la contrainte se réduit à la borne $p_{bt} \leq P^{\max}$. Le grand $M$ vaut donc exactement $P^{\max}$.
+
+  \item Bilan d'énergie de chaque batterie :
+  \[ E_{bt} = E_{b,t-1} - a_{bt}\,c_{bt} + \frac{p_{bt}}{h} \qquad \forall b \in B,\ \forall t \in \mathcal{T} \]
+  La consommation et la recharge de la période $t$ font passer le niveau de la fin de la période $t-1$ à la fin de la période $t$.
+
+  \item Limite de puissance totale du dépôt à chaque période :
+  \[ \sum_{b \in B} p_{bt} \leq G \qquad \forall t \in \mathcal{T} \]
+\end{enumerate}
+
+\paragraph{Fonction objectif}
+Minimiser le coût de l'énergie de recharge de tous les bus sur toutes les périodes, en dollars (les prix sont en cents/kWh et $p_{bt}/h$ est l'énergie reçue en kWh) :
+\[ \min\ z = \frac{1}{100} \sum_{b \in B} \sum_{t \in \mathcal{T}} \pi_t \, \frac{p_{bt}}{h} \]
+
+\paragraph{Quantités calculées pour l'affichage}
+Le modèle affiche aussi la facture complète, calculée à partir de la solution optimale :
+\[ P^{\text{pointe}} = \max_{t \in \mathcal{T}} \sum_{b \in B} p_{bt}, \qquad
+   \text{prime} = \frac{D \, P^{\text{pointe}}}{100}, \qquad
+   \text{facture} = z + \text{prime}. \]
+Ces quantités ne font pas partie de l'objectif : la pointe affichée est celle de la solution retournée par HiGHS et n'est pas minimisée.
+
+\end{document}
