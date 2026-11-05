@@ -1,0 +1,89 @@
+\documentclass{article}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage[margin=1in]{geometry}
+
+
+\title{Projet, MTH8414}
+\author{Antoine Habib, Isaac Valin, Kinan Toutoungy}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section*{Question 2}
+
+\paragraph{Ensembles}
+\begin{itemize}
+  \item $B = \{1, \dots, n_B\}$ : ensemble des bus (\texttt{BUSES}), où $n_B$ = \texttt{nBuses}.
+  \item $\mathcal{T} = \{1, \dots, T\}$ : ensemble des périodes (\texttt{PERIODS}), où $T$ = \texttt{nPeriods} ; la période 1 va de 4\,h à 4\,h\,30.
+  \item $\mathcal{T}_0 = \{0\} \cup \mathcal{T}$ : instants où l'on mesure le niveau des batteries ; l'indice 0 représente le début de la journée.
+  \item $K = \{1, \dots, n_K\}$ : ensemble des types de chargeurs (\texttt{TYPES}), où $n_K$ = \texttt{nTypes} (1 = lent, 2 = rapide).
+\end{itemize}
+
+\paragraph{Paramètres}
+\begin{itemize}
+  \item $a_{bt} \in \{0,1\}$ (\texttt{away}) : vaut 1 si le bus $b$ est sur la route pendant la période $t$, $\forall b \in B,\ \forall t \in \mathcal{T}$.
+  \item $c_{bt} \geq 0$ (\texttt{cons}) : énergie consommée par le bus $b$ pendant la période $t$ (kWh), $\forall b \in B,\ \forall t \in \mathcal{T}$.
+  \item $\pi_t$ (\texttt{price}) : prix de l'énergie pendant la période $t$ (cents/kWh), $\forall t \in \mathcal{T}$.
+  \item $h$ (\texttt{periodsPerHour}) : nombre de périodes par heure ; un bus qui recharge à $p$~kW pendant une période reçoit $p/h$~kWh.
+  \item $C$ (\texttt{capacity}) : capacité d'une batterie (kWh).
+  \item $R$ (\texttt{reserve}) : niveau minimal d'une batterie en tout temps (kWh).
+  \item $G$ (\texttt{gridLimit}) : puissance totale maximale que le dépôt peut tirer du réseau (kW).
+  \item $D$ (\texttt{demandCharge}) : prime de puissance
+  \item $P_k$ (\texttt{power}) : puissance d'un chargeur de type $k$ (kW), $\forall k \in K$.
+  \item $F_k$ (\texttt{chargerCost}) : coût quotidien d'un chargeur de type $k$, $\forall k \in K$.
+  \item $P^{\max} = \max_{k \in K} P_k$ (\texttt{maxPower}) : puissance du chargeur plus puisse qui remplace valeur fixe de la Q1. 
+\end{itemize}
+
+\paragraph{Variables}
+\begin{itemize}
+  \item $p_{bt} \in [0, P^{\max}]$ et $E_{bt} \in [R, C]$ : mêmes définitions qu'à la question 1.
+  \item $N_k \in \{0, 1, \dots, n_B\}$ (\texttt{nbChargeurs[k]}) : nombre de chargeurs de type $k$ installés, $\forall k \in K$. Nombre de chargeurs installés doit $\leq |K| $ 
+  \item $x_{btk} \in \{0,1\}$ (\texttt{x[b,t,k]}) : vaut 1 si le bus $b$ est branché sur un chargeur de type $k$ pendant la période $t$, $\forall b \in B,\ \forall t \in \mathcal{T},\ \forall k \in K$.
+  \item $P^{\text{pointe}} \geq 0$ (\texttt{p\_pointe}) : puissance totale maximale tirée par le dépôt au cours de la journée (kW).
+\end{itemize}
+
+\paragraph{Contraintes}
+On modifie la contrainte 3 et on rajoute les nouvelles contraintes 6 et 7. 
+\begin{enumerate}
+  \item  Batteries pleines au début de la journée :
+  \[ E_{b0} = C \qquad \forall b \in B \]
+
+  \item  Batteries pleines à la fin de la journée :
+  \[ E_{bT} = C \qquad \forall b \in B \]
+
+  \item  Au plus un chargeur par bus, et aucun lorsque le bus est sur la route :
+  \[ \sum_{k \in K} x_{btk} \leq 1 - a_{bt} \qquad \forall b \in B,\ \forall t \in \mathcal{T} \]
+
+  \item  Bilan d'énergie de chaque batterie :
+  \[ E_{bt} = E_{b,t-1} - a_{bt}\,c_{bt} + \frac{p_{bt}}{h} \qquad \forall b \in B,\ \forall t \in \mathcal{T} \]
+
+  \item  Limite de puissance totale du dépôt à chaque période :
+  \[ \sum_{b \in B} p_{bt} \leq G \qquad \forall t \in \mathcal{T} \]
+
+  \item Nombre de chargeurs installés : pour toute période, le nombre de bus type $k$, entraint de charger, ne dépasse pas le nombre de chargeurs de ce type.
+  \[ \sum_{b \in B} x_{btk} \leq N_k \qquad \forall t \in \mathcal{T},\ \forall k \in K \]
+
+  \item Puissance maximale du chargeur : un bus ne recharge que s'il est branché, et au plus à la puissance de son chargeur.
+  \[ p_{bt} \leq \sum_{k \in K} P_k\, x_{btk} \qquad \forall b \in B,\ \forall t \in \mathcal{T} \]
+\end{enumerate}
+
+\paragraph{Fonction objectif}
+
+Soit:
+\[ P^{\text{pointe}} = \max_{t \in \mathcal{T}} \sum_{b \in B} p_{bt}. \]
+
+
+Alors l'objectif minimiser coût journalier total s'écrit comme :
+\[ \min\ Z =
+   \underbrace{\frac{1}{100} \sum_{b \in B} \sum_{t \in \mathcal{T}} \pi_t \, \frac{p_{bt}}{h}}_{\text{énergie}}
+   + \underbrace{\frac{D \, P^{\text{pointe}}}{100}}_{\text{prime}}
+   + \underbrace{\frac{1}{100} \sum_{k \in K} F_k \, N_k}_{\text{chargeurs}} \]
+
+\paragraph{Quantités affichées}
+Le modèle affiche séparément les trois termes de $Z$ (énergie, prime et chargeurs), la pointe $P^{\text{pointe}}$ et le nombre de chargeurs $N_k$ de chaque type.
+
+\end{document}
