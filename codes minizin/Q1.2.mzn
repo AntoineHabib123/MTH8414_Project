@@ -49,17 +49,35 @@ var float: p_pointe = max([sum(b in BUSES)(p[b,t]) | t in PERIODS]);
 var float: prime = demandCharge * p_pointe / 100.0;
 var float: facture_totale = cost + prime;
 
-% MODIFICATION 1 --> Minimiser la facture totale
-solve minimize facture_totale;
+
+solve minimize cost;
 
 
 output
-  [ "Energie ($)        : \(cost)\n"
+  ["GridLimit          : \(gridLimit)\n" 
+  ,"Energie ($)        : \(cost)\n"
 
   , "Pointe (kW)        : \(p_pointe)\n"
 
   , "Prime ($)          : \(prime)\n"
 
   , "Facture totale ($) : \(facture_totale)\n"
-  ];
+  
+  , "Énergie bus 1 (kWh) : "
+ ] ++ [ "\(E[1, t]) " | t in 0..nPeriods ] ++ [ "\n"
+ 
+  , "Puissance de recharge du bus 1 (kWh) : "
+ ] ++ [ "\(p[1, t]) " | t in PERIODS ] ++ [ "\n"
+ 
+   , "Énergie bus 2 (kWh) : "
+ ] ++ [ "\(E[2, t]) " | t in 0..nPeriods ] ++ [ "\n"
+ 
+  , "Puissance de recharge du bus 2 (kWh) : "
+ ] ++ [ "\(p[2, t]) " | t in PERIODS ] ++ [ "\n"
+    
+    
+, "Puissance du dépôt (kW) : "
+] ++ [ "\(sum(b in BUSES)(p[b, t])) " | t in PERIODS ] ++ [
+  "\n"
+];
 

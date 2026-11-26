@@ -43,22 +43,41 @@ constraint forall(t in PERIODS)(sum(b in BUSES)(p[b, t]) <= gridLimit);
 % Cout de l'énergie en dollars
 var float: cost = sum(b in BUSES, t in PERIODS)(price[t] * p[b, t]/periodsPerHour)/100;
 
-%Pour le output
-%Pour le output
-var float: p_pointe = max([sum(b in BUSES)(p[b,t]) | t in PERIODS]);
+var 0.0..int2float(gridLimit): p_pointe;   % pointe
+constraint forall(t in PERIODS)(sum(b in BUSES)(p[b,t]) <= p_pointe);
+
 var float: prime = demandCharge * p_pointe / 100.0;
 var float: facture_totale = cost + prime;
 
-solve minimize cost;
+% MODIFICATION 1 --> Minimiser la facture totale
+solve minimize facture_totale;
 
 
 output
-  [ "Energie ($)        : \(cost)\n"
+  ["GridLimit          : \(gridLimit)\n" 
+  ,"Energie ($)        : \(cost)\n"
 
   , "Pointe (kW)        : \(p_pointe)\n"
 
   , "Prime ($)          : \(prime)\n"
 
   , "Facture totale ($) : \(facture_totale)\n"
-  ];
+  
+  , "Énergie bus 1 (kWh) : "
+ ] ++ [ "\(E[1, t]) " | t in 0..nPeriods ] ++ [ "\n"
+ 
+  , "Puissance de recharge du bus 1 (kWh) : "
+ ] ++ [ "\(p[1, t]) " | t in PERIODS ] ++ [ "\n"
+ 
+   , "Énergie bus 2 (kWh) : "
+ ] ++ [ "\(E[2, t]) " | t in 0..nPeriods ] ++ [ "\n"
+ 
+  , "Puissance de recharge du bus 2 (kWh) : "
+ ] ++ [ "\(p[2, t]) " | t in PERIODS ] ++ [ "\n"
+    
+    
+, "Puissance du dépôt (kW) : "
+] ++ [ "\(sum(b in BUSES)(p[b, t])) " | t in PERIODS ] ++ [
+  "\n"
+];
 
