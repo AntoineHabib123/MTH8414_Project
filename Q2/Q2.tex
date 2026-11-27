@@ -3,6 +3,7 @@
 \usepackage{graphicx} % Required for inserting images
 \usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage{booktabs}
 \usepackage[margin=1in]{geometry}
 
 
@@ -15,6 +16,7 @@
 
 \section*{Question 2}
 
+\subsection*{Question 2.1}
 \paragraph{Ensembles}
 \begin{itemize}
   \item $B = \{1, \dots, n_B\}$ : ensemble des bus (\texttt{BUSES}), où $n_B$ = \texttt{nBuses}.
@@ -85,5 +87,116 @@ Alors l'objectif minimiser coût journalier total s'écrit comme :
 
 \paragraph{Quantités affichées}
 Le modèle affiche séparément les trois termes de $Z$ (énergie, prime et chargeurs), la pointe $P^{\text{pointe}}$ et le nombre de chargeurs $N_k$ de chaque type.
+
+
+\subsection*{Question 2.2}
+La solution optimale obtenue en minzinc Zinc à partire du fichier \texttt{Q2\_2.mzn} tester sur \texttt{depot\_04}, indique que la société devrait installer uniquement 1 chargeur de type 2 (rapide). La solution nous rends des coũts de 120.4\$, 52.0\$ et 40.0\$ avec un total de 212.4\$. Dans la partie 1.6, la solution optimale indique une facture totale de 168.33\$ qui est composée entre les 115\$ associées à l'énergie, puis les 53.33\$ associées aux primes. Ces valeurs bornent inférieurement les valeurs optimales des solutions de la questions 2 car l'espace des solutions réalisables de quéstion 2 est contenu dans celle de Q1.6 par l'ajout des contraintes 6 et 7. Comme nous traitons un problème de minimisation, et les chargeurs ajoutent des coûts positifs, les solutions optimales de la question 2 ne peuvent pas être plus petites.  
+
+
+\subsection*{Question 2.3}
+ Dans le cas de l'instance de référence, la valeur de la facture totale dans le solution optimale du problème relaxé est de 597.00. Cette solution propose 5 installations, une de type 1 et deux de type 2. 
+
+Les autres contraintes ne changent pas. En particulier, la réserve et la capacité des batteries ($R \leq E_{bt} \leq C$) portent sur des variables déjà continues et restent imposées. Quand on relaxe le problème, $x_{btk}$ peut être fractionnaire. Quand un bus est branché sur un valeur fractionaire, ceci est équivant à dire que plus d'un bus peut être branché au pendant une période de temps. 
+
+En effet la solution du problème relaxé est une très bonne approximation du problème car elle ne prend qu'en comtpe la puissance totale des chargeurs en ignorant le fait qu'un chargeur ne peut que être pris par un bus pendant une période. 
+
+\subsection*{Question 2.4}
+\subsubsection*{a)}
+On reprend le modèle décrit dans la question 2.1. Les paramètres, variables, contraintes et fonctions objectives décrit dessous sont les ajouts.  
+
+\paragraph{Paramètres}
+\begin{itemize}
+  \item $\beta$ (\texttt{plugCost}) : coût d'une opération de branchement (cents par branchement).
+\end{itemize}
+
+\paragraph{Variables}
+\begin{itemize}
+  \item $y_{btk} \in \{0,1\}$ (\texttt{branchement[b,t,k]}) : 1 si $b$ commence un branchement sur chargeur $k$ au début de $t$, $\forall b \in B,\ \forall t \in \mathcal{T},\ \forall k \in K$.
+\end{itemize}
+
+\paragraph{Contraintes}
+On ajoutes les contraintes suivantes en gardant C1-C7. 
+\begin{enumerate}
+  \setcounter{enumi}{7}
+  \item Passer de « non branché » à « branché » sur un type de chargeur compte comme un branchement :
+  \[ y_{btk} \geq x_{btk} - x_{b,t-1,k} \qquad \forall b \in B,\ \forall t \in \mathcal{T} \setminus \{1\},\ \forall k \in K \]
+
+  \item Aucun branchement si le bus était déjà branché sur ce type à la période précédente :
+  \[ y_{btk} \leq 1 - x_{b,t-1,k} \qquad \forall b \in B,\ \forall t \in \mathcal{T} \setminus \{1\},\ \forall k \in K \]
+
+  \item Aucun branchement si le bus n'est pas branché sur ce type pendant la période $t$ :
+  \[ y_{btk} \leq x_{btk} \qquad \forall b \in B,\ \forall t \in \mathcal{T} \setminus \{1\},\ \forall k \in K \]
+\end{enumerate}
+
+
+\paragraph{Fonction objectif}
+On ajoute le coût des branchements à la facture de la question précédente, en dollars :
+\[ \min\ Z =
+   \underbrace{\frac{1}{100} \sum_{b \in B} \sum_{t \in \mathcal{T}} \pi_t \, \frac{p_{bt}}{h}}_{\text{énergie}}
+   + \underbrace{\frac{D \, P^{\text{pointe}}}{100}}_{\text{prime}}
+   + \underbrace{\frac{1}{100} \sum_{k \in K} F_k \, N_k}_{\text{chargeurs}}
+   + \underbrace{\frac{\beta}{100} \sum_{b \in B} \sum_{t \in \mathcal{T}} \sum_{k \in K} y_{btk}}_{\text{branchements}} \]
+
+
+\subsubsection*{b)}
+On résout \texttt{depot\_12.dzn} avec HiGHS 1.9.0. Après 62~s de résolution et 2643 nœuds explorés, le solveur retourne une solution de valeur $Z = 654.00$\,\$, avec 19 opérations de branchement. Une meilleure borne de 647.33\,\$, soit un écart de $1.02$\,\%. L'optimalité n'est donc pas prouvée et la borne garantit qu'aucune solution ne coûte moins de 647.33\,\$. Différence avec le plan de 2.2 est telle que la facture augmente seulement du coût des branchements (voir  Q2.5).
+
+
+\subsubsection*{c)}
+Chaque séjour où le bus recharge compte pour au moins un branchement. Le nombre de branchements et donc uniquement inférieure au nombre de séjours si un bus ne recharge pas pendant une des jours.
+
+
+\subsection*{Question 2.5}
+\newcommand{\modeleA}{HiGHs}
+\newcommand{\modeleB}{COIN-BC}
+
+\begin{table}[htbp]
+  \caption{Comparaison des deux modèles de la question 2.2}
+  \label{tab:resultats-q24}
+  \begin{tabular}{lcc}
+    \toprule
+    & \modeleA & \modeleB \\
+    \midrule
+    Chargeurs lents $N_1$                  & 0  & 0 \\
+    Chargeurs rapides $N_2$                & 6  & 6\\
+    \midrule
+    Énergie (\$)                    & 858.75 & 858.75 \\
+    Pointe $P^{\text{pointe}}$ (kW) &   900.00  &  900.00 \\
+    Prime de puissance (\$)         & 360.00 & 360.00 \\
+    Chargeurs (\$)                  & 240.0  & 240.0 \\
+    Facture totale (\$)    & 1458.75 &  1458.75\\
+    \midrule
+    Run-time (seconds) & 1.227 & 2.460 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+  \caption{Comparaison des deux modèles de la question 2.4}
+  \label{tab:resultats-q24}
+  \begin{tabular}{lcc}
+    \toprule
+    & \modeleA & \modeleB \\
+    \midrule
+    Chargeurs lents $N_1$                  & 0  & 0 \\
+    Chargeurs rapides $N_2$                & 6  &  8 \\
+    Nombre de branchements $N^{\text{br}}$ & 48 & 49 \\
+    \midrule
+     Énergie (\$)                    & 858.75 & 1046.25 \\
+    Pointe $P^{\text{pointe}}$ (kW) &   900.00  &  720.0 \\
+    Prime de puissance (\$)         & 360.00 & 288.0 \\
+    Chargeurs (\$)                  & 240.0  & 320.0 \\
+    Branchements (\$)               & 144.00  &  147.0 \\
+    Chargeurs (\$)                  & 240.0  & 240.0 \\
+    Facture totale (\$)    & 1602.75 &  1801.25\\
+    \midrule
+    Run-time (seconds) & 120 (not converged) & 120 (not converged) \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+
+
+
 
 \end{document}
